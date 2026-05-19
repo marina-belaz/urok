@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тест: Кодирование звуковой информации (10 класс)</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --success: #16a34a;
+      --error: #dc2626;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 20px; }
+    .container { max-width: 700px; margin: 0 auto; background: var(--card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); padding: 24px; }
+    h1 { font-size: 1.5rem; margin-bottom: 8px; color: var(--primary); text-align: center; }
+    h2 { font-size: 1.2rem; margin: 16px 0 12px; }
+    p { margin-bottom: 12px; color: var(--muted); font-size: 0.95rem; }
+    .step { display: none; }
+    .step.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; }
+    button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: #e2e8f0; color: var(--text); margin-right: 8px; }
+    .variant-btn { width: 48%; margin: 4%; }
+    .question { margin-bottom: 20px; padding: 12px; background: #f1f5f9; border-radius: 8px; }
+    .question p { font-weight: 500; color: var(--text); margin-bottom: 8px; }
+    .option { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+    .option input { width: auto; margin: 0; }
+    .review-item { margin-bottom: 16px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+    .review-item.correct { background: #f0fdf4; border-color: var(--success); }
+    .review-item.wrong { background: #fef2f2; border-color: var(--error); }
+    .review-item .status { font-weight: bold; margin-bottom: 4px; }
+    .review-item .explanation { margin-top: 8px; padding: 8px; background: #fff; border-radius: 4px; font-size: 0.9rem; color: #475569; }
+    .score-box { text-align: center; font-size: 1.4rem; margin: 16px 0; font-weight: bold; }
+    .error-msg { color: var(--error); font-size: 0.85rem; margin-top: -6px; margin-bottom: 8px; }
+    @media print { button, .step:not(#results) { display: none; } .container { box-shadow: none; } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🔊 Кодирование звуковой информации</h1>
+  <p>Информатика, 10 класс. Тест из 5 вопросов.</p>
+
+  <!-- Шаг 1: Данные ученика -->
+  <div id="step1" class="step active">
+    <h2>Шаг 1: Введите данные</h2>
+    <input type="text" id="lastName" placeholder="Фамилия">
+    <input type="text" id="firstName" placeholder="Имя">
+    <input type="text" id="className" placeholder="Класс (например, 10А)">
+    <div id="err1" class="error-msg"></div>
+    <button onclick="goToStep2()">Продолжить</button>
+  </div>
+
+  <!-- Шаг 2: Выбор варианта -->
+  <div id="step2" class="step">
+    <h2>Шаг 2: Выберите вариант</h2>
+    <p>После выбора изменить вариант будет нельзя.</p>
+    <button class="secondary variant-btn" onclick="loadVariant(1)">Вариант 1</button>
+    <button class="secondary variant-btn" onclick="loadVariant(2)">Вариант 2</button>
+  </div>
+
+  <!-- Шаг 3: Тест -->
+  <div id="step3" class="step">
+    <h2 id="variantTitle"></h2>
+    <form id="testForm"></form>
+    <div id="err2" class="error-msg"></div>
+    <button onclick="submitTest()" style="margin-top:12px;">Завершить тест</button>
+  </div>
+
+  <!-- Шаг 4: Результаты -->
+  <div id="results" class="step">
+    <h2>✅ Результаты</h2>
+    <div id="studentInfo" style="text-align:center; margin-bottom:10px; color:var(--muted);"></div>
+    <div class="score-box" id="scoreDisplay"></div>
+    <div id="reviewContainer"></div>
+    <button onclick="location.reload()" class="secondary" style="margin-top:16px;">Пройти заново</button>
+  </div>
+</div>
+
+<script>
+  const testData = {
+    1: [
+      {q: "1. Что показывает частота дискретизации звука?", options: ["Количество уровней громкости", "Количество измерений амплитуды сигнала за 1 секунду", "Длительность звукового файла", "Количество каналов"], correct: 1, explanation: "Частота дискретизации (Гц) определяет, сколько раз в секунду измеряется амплитуда звукового сигнала. Чем выше частота, тем точнее передаются высокие звуки."},
+      {q: "2. При глубине кодирования 8 бит можно закодировать ___ различных уровней громкости.", options: ["8", "16", "256", "512"], correct: 2, explanation: "Количество уровней = 2ⁱ, где i — глубина кодирования в битах. 2⁸ = 256 уровней."},
+      {q: "3. Рассчитайте информационный объем (в КБ) 10-секундного монофонического звукового файла с частотой 11,025 кГц и глубиной 16 бит.", options: ["~215 КБ", "~430 КБ", "~108 КБ", "~860 КБ"], correct: 0, explanation: "Объем = Частота × Глубина × Время = 11025 × 16 × 10 = 1 764 000 бит = 220 500 байт ≈ 215,3 КБ."},
+      {q: "4. Какой параметр НЕ входит в формулу расчета объема несжатого звукового файла (PCM)?", options: ["Частота дискретизации", "Глубина кодирования", "Длительность записи", "Скорость воспроизведения (высота тона)"], correct: 3, explanation: "Объем зависит только от частоты, глубины, времени и количества каналов. Высота тона или темп не влияют на количество бит данных."},
+      {q: "5. При оцифровке звука потеря части информации (необратимое сжатие) происходит в форматах:", options: ["WAV", "FLAC", "MP3", "PCM"], correct: 2, explanation: "MP3 использует психоакустическое сжатие с потерями, удаляя малозаметные для человеческого уха частоты для уменьшения размера файла."}
+    ],
+    2: [
+      {q: "1. Что характеризует глубина кодирования звука?", options: ["Количество измерений амплитуды за секунду", "Точность кодирования амплитуды (количество уровней громкости)", "Длительность аудиозаписи", "Количество звуковых каналов"], correct: 1, explanation: "Глубина кодирования (разрядность) определяет, сколькими битами кодируется одно измерение амплитуды, то есть количество возможных уровней громкости."},
+      {q: "2. При частоте дискретизации 44,1 кГц записывается ___ отсчетов амплитуды за 2 секунды.", options: ["44 100", "88 200", "22 050", "176 400"], correct: 1, explanation: "44 100 Гц × 2 с = 88 200 отсчетов. Частота дискретизации показывает число измерений в секунду."},
+      {q: "3. Рассчитайте информационный объем (в МБ) 1-минутного стереофайла (44,1 кГц, 16 бит).", options: ["~5,0 МБ", "~10,1 МБ", "~20,2 МБ", "~40,4 МБ"], correct: 1, explanation: "Объем = 44100 × 16 × 60 × 2 = 84 672 000 бит = 10 584 000 байт ≈ 10,09 МБ."},
+      {q: "4. Какой параметр напрямую влияет на точность передачи высоких частот при оцифровке?", options: ["Частота дискретизации", "Глубина кодирования", "Количество каналов", "Разрядность процессора"], correct: 0, explanation: "Согласно теореме Котельникова, максимальная частота, которую можно точно оцифровать без искажений, равна половине частоты дискретизации."},
+      {q: "5. Форматы WAV и FLAC относятся к:", options: ["Форматам с потерями", "Форматам без потерь (или несжатым)", "Текстовым форматам", "Видеоформатам"], correct: 1, explanation: "WAV хранит несжатый PCM-сигнал, FLAC использует алгоритм сжатия без потерь. Оба формата сохраняют исходное качество записи."}
+    ]
+  };
+
+  let currentVariant = null;
+  let studentData = {};
+
+  function goToStep2() {
+    const ln = document.getElementById('lastName').value.trim();
+    const fn = document.getElementById('firstName').value.trim();
+    const cl = document.getElementById('className').value.trim();
+    const err = document.getElementById('err1');
+    if (!ln || !fn || !cl) { err.textContent = 'Заполните все поля'; return; }
+    studentData = { ln, fn, cl };
+    err.textContent = '';
+    showStep('step2');
+  }
+
+  function loadVariant(v) {
+    currentVariant = v;
+    document.getElementById('variantTitle').textContent = `Вариант ${v}`;
+    const form = document.getElementById('testForm');
+    form.innerHTML = '';
+    testData[v].forEach((q, i) => {
+      const div = document.createElement('div');
+      div.className = 'question';
+      div.innerHTML = `<p>${q.q}</p>`;
+      q.options.forEach((opt, j) => {
+        div.innerHTML += `<label class="option"><input type="radio" name="q${i}" value="${j}"> ${opt}</label>`;
+      });
+      form.appendChild(div);
+    });
+    showStep('step3');
+  }
+
+  function submitTest() {
+    const err = document.getElementById('err2');
+    let answered = 0;
+    for (let i = 0; i < 5; i++) {
+      if (document.querySelector(`input[name="q${i}"]:checked`)) answered++;
+    }
+    if (answered < 5) { err.textContent = 'Пожалуйста, ответьте на все вопросы.'; return; }
+    err.textContent = '';
+
+    let score = 0;
+    const reviewHTML = [];
+    testData[currentVariant].forEach((q, i) => {
+      const chosen = parseInt(document.querySelector(`input[name="q${i}"]:checked`).value);
+      const isCorrect = chosen === q.correct;
+      if (isCorrect) score++;
+      
+      let html = `<div class="review-item ${isCorrect ? 'correct' : 'wrong'}">`;
+      html += `<div class="status">${q.q} ${isCorrect ? '✅ Верно' : '❌ Ошибка'}</div>`;
+      if (!isCorrect) {
+        html += `<div>Ваш ответ: ${q.options[chosen]} | Правильный: ${q.options[q.correct]}</div>`;
+        html += `<div class="explanation">💡 <b>Пояснение:</b> ${q.explanation}</div>`;
+      } else {
+        html += `<div style="color:var(--muted); font-size:0.9rem;">Ответ: ${q.options[chosen]}</div>`;
+      }
+      html += `</div>`;
+      reviewHTML.push(html);
+    });
+
+    document.getElementById('studentInfo').textContent = `${studentData.ln} ${studentData.fn}, ${studentData.cl} кл. | Вариант ${currentVariant}`;
+    document.getElementById('scoreDisplay').textContent = `Ваш результат: ${score} из 5 баллов`;
+    document.getElementById('reviewContainer').innerHTML = reviewHTML.join('');
+    showStep('results');
+  }
+
+  function showStep(id) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+</script>
+</body>
+</html>
