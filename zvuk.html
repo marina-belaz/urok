@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кодирование звука | Загадка веса</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Основной блок с заданием */
+        .task-card {
+            background: white;
+            border-radius: 30px;
+            padding: 35px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.2em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eef2ff;
+        }
+
+        /* Сравнение двух аудиофайлов */
+        .audio-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .audio-card {
+            background: #f8f9ff;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid #e2e8f0;
+        }
+
+        .audio-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .audio-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+        }
+
+        .file-size {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .file-size.low {
+            color: #ef4444;
+        }
+
+        .file-size.high {
+            color: #22c55e;
+        }
+
+        .params {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.95em;
+            color: #475569;
+            margin: 15px 0;
+        }
+
+        .audio-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .audio-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .audio-btn.playing {
+            background: #22c55e;
+        }
+
+        /* Блок с вопросом */
+        .question-box {
+            background: #fff3cd;
+            border-left: 6px solid #f59e0b;
+            border-radius: 16px;
+            padding: 22px;
+            margin: 25px 0 20px;
+        }
+
+        .question-box strong {
+            font-size: 1.1em;
+            color: #92400e;
+        }
+
+        .question-box p {
+            margin-top: 12px;
+            font-size: 1.05em;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .highlight-number {
+            color: #f59e0b;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        /* Подсказка */
+        .hint {
+            text-align: center;
+            color: #64748b;
+            font-style: italic;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        @media (max-width: 700px) {
+            .audio-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .task-card {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="task-card">
+        <h1>🎧 Кодирование звуковой информации</h1>
+        <div class="subtitle">10 класс | Загадка веса аудиофайла</div>
+
+        <!-- Два аудиофайла для сравнения -->
+        <div class="audio-grid">
+            <!-- Файл А (низкое качество) -->
+            <div class="audio-card">
+                <h3>📉 Файл А</h3>
+                <div class="file-size low">1,2 МБ</div>
+                <div class="params">
+                    📊 8 кГц (частота дискретизации)<br>
+                    🎚️ 8 бит (глубина кодирования)<br>
+                    🔊 Моно (1 канал)<br>
+                    ⏱️ 2 секунды
+                </div>
+                <button class="audio-btn" onclick="playAudio('low', this)">▶ Послушать</button>
+            </div>
+
+            <!-- Файл Б (высокое качество) -->
+            <div class="audio-card">
+                <h3>📈 Файл Б</h3>
+                <div class="file-size high">48 МБ</div>
+                <div class="params">
+                    📊 44,1 кГц (частота дискретизации)<br>
+                    🎚️ 16 бит (глубина кодирования)<br>
+                    🔊 Стерео (2 канала)<br>
+                    ⏱️ 2 секунды
+                </div>
+                <button class="audio-btn" onclick="playAudio('high', this)">▶ Послушать</button>
+            </div>
+        </div>
+
+        <!-- Проблемный вопрос для класса -->
+        <div class="question-box">
+            <strong>🔍 Вопрос классу:</strong>
+            <p>❓ <strong>Почему при одинаковой длительности (2 секунды) файлы различаются в <span class="highlight-number">40 раз</span>?</strong><br>
+            🎯 <strong>Назовите 3 параметра, которые влияют на размер цифрового аудиофайла.</strong></p>
+        </div>
+
+        <div class="hint">
+            💡 Подсказка: сравните параметры в серых блоках — частота, глубина, количество каналов
+        </div>
+    </div>
+</div>
+
+<script>
+    // === АУДИО через Web Audio API (синтез звука) ===
+    let audioContext = null;
+    let activeOscillator = null;
+
+    function initAudioContext() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    }
+
+    function playAudio(quality, button) {
+        initAudioContext();
+
+        // Останавливаем текущее воспроизведение, если есть
+        if (activeOscillator) {
+            activeOscillator.stop();
+            activeOscillator = null;
+        }
+
+        // Сбрасываем все кнопки
+        document.querySelectorAll('.audio-btn').forEach(btn => {
+            btn.textContent = '▶ Послушать';
+            btn.classList.remove('playing');
+        });
+
+        // Меняем текст кнопки
+        button.textContent = '⏸ Воспроизведение...';
+        button.classList.add('playing');
+
+        // Создаём генератор звука
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        if (quality === 'low') {
+            // Низкое качество — грубый, резкий звук (квадратная волна)
+            oscillator.type = 'square';
+            oscillator.frequency.value = 220;  // нота Ля
+        } else {
+            // Высокое качество — чистый, мягкий звук (синусоида)
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 440;  // нота Ля на октаву выше
+        }
+
+        // Настройка громкости с плавным затуханием
+        gainNode.gain.setValueAtTime(0.35, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.8);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 1.8);
+
+        activeOscillator = oscillator;
+
+        oscillator.onended = () => {
+            button.textContent = '▶ Послушать';
+            button.classList.remove('playing');
+            activeOscillator = null;
+        };
+    }
+
+    // Разрешаем аудио при первом клике на любую кнопку (для браузеров, требующих жеста)
+    document.body.addEventListener('click', () => {
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    });
+</script>
+</body>
+</html>
