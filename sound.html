@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Оцифровка звуковой информации</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1f2937;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --accent5: #ffa657;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --border: #30363d;
+    --glow: rgba(88,166,255,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0d1b2a 0%, #1a1a2e 50%, #16213e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(88,166,255,0.12) 0%, transparent 70%);
+  }
+  header h1 {
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--accent4), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    position: relative;
+  }
+  header p { color: var(--text2); margin-top: 6px; font-size: .95rem; position: relative; }
+
+  /* ── NAV TABS ── */
+  nav {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 16px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    justify-content: center;
+  }
+  .tab {
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: .88rem;
+    transition: all .25s;
+    white-space: nowrap;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 600;
+  }
+
+  /* ── MAIN ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 1.15rem; font-weight: 600;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .icon { font-size: 1.3rem; }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:700px){ .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── CANVAS ── */
+  canvas {
+    width: 100%; border-radius: 10px;
+    background: #0a0e14;
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  /* ── SLIDERS ── */
+  .ctrl-row {
+    display: flex; align-items: center; gap: 14px;
+    margin-top: 14px; flex-wrap: wrap;
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+  .ctrl-group label { font-size: .8rem; color: var(--text2); }
+  .ctrl-group span { font-size: .85rem; color: var(--accent); font-weight: 600; }
+  input[type=range] {
+    width: 100%; accent-color: var(--accent);
+    cursor: pointer; height: 6px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 9px 20px; border-radius: 8px; border: none;
+    cursor: pointer; font-size: .88rem; font-weight: 600;
+    transition: all .2s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { filter: brightness(1.15); }
+  .btn-success { background: var(--accent2); color: #000; }
+  .btn-success:hover { filter: brightness(1.15); }
+  .btn-danger  { background: var(--accent3); color: #fff; }
+  .btn-danger:hover { filter: brightness(1.15); }
+  .btn-outline {
+    background: transparent; color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-outline:hover { background: var(--glow); }
+
+  /* ── INFO PILLS ── */
+  .pill {
+    display: inline-block;
+    padding: 3px 12px; border-radius: 12px;
+    font-size: .78rem; font-weight: 600;
+  }
+  .pill-blue  { background: rgba(88,166,255,.15); color: var(--accent); }
+  .pill-green { background: rgba(63,185,80,.15);  color: var(--accent2); }
+  .pill-red   { background: rgba(247,129,102,.15); color: var(--accent3); }
+  .pill-purple{ background: rgba(210,168,255,.15); color: var(--accent4); }
+  .pill-orange{ background: rgba(255,166,87,.15);  color: var(--accent5); }
+
+  /* ── THEORY TEXT ── */
+  .theory p { line-height: 1.75; color: var(--text2); margin-bottom: 12px; font-size: .93rem; }
+  .theory strong { color: var(--text); }
+  .theory .highlight {
+    background: rgba(88,166,255,.08);
+    border-left: 3px solid var(--accent);
+    padding: 10px 16px; border-radius: 0 8px 8px 0;
+    margin: 12px 0;
+  }
+  .formula {
+    background: #0a0e14; border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem; color: var(--accent4);
+    text-align: center; margin: 12px 0;
+    letter-spacing: .03em;
+  }
+
+  /* ── STEP DIAGRAM ── */
+  .steps { display: flex; gap: 0; flex-wrap: wrap; margin: 16px 0; }
+  .step {
+    flex: 1; min-width: 120px;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 14px 12px; text-align: center;
+    position: relative;
+  }
+  .step:first-child { border-radius: 10px 0 0 10px; }
+  .step:last-child  { border-radius: 0 10px 10px 0; }
+  .step::after {
+    content: '▶';
+    position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+    color: var(--accent); font-size: .8rem; z-index: 1;
+  }
+  .step:last-child::after { display: none; }
+  .step .step-icon { font-size: 1.6rem; }
+  .step .step-name { font-size: .75rem; color: var(--accent); font-weight: 600; margin-top: 6px; }
+  .step .step-desc { font-size: .7rem; color: var(--text2); margin-top: 4px; line-height: 1.4; }
+
+  /* ── STATS BAR ── */
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .stat {
+    flex: 1; min-width: 130px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+    text-align: center;
+  }
+  .stat .val { font-size: 1.3rem; font-weight: 700; }
+  .stat .lbl { font-size: .72rem; color: var(--text2); margin-top: 3px; }
+
+  /* ── BITS DISPLAY ── */
+  #bitsContainer {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-top: 12px; max-height: 160px; overflow-y: auto;
+  }
+  .bit-group {
+    display: flex; gap: 1px;
+    background: var(--surface2); border-radius: 6px;
+    padding: 3px 6px; border: 1px solid var(--border);
+  }
+  .bit-cell {
+    width: 18px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: monospace; font-size: .78rem; font-weight: 700;
+    border-radius: 3px;
+  }
+  .bit-1 { background: rgba(88,166,255,.25); color: var(--accent); }
+  .bit-0 { background: rgba(139,148,158,.1); color: var(--text2); }
+
+  /* ── QUIZ ── */
+  .quiz-q { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+  .quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-opt {
+    padding: 11px 16px; border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer; font-size: .9rem;
+    transition: all .2s; color: var(--text);
+  }
+  .quiz-opt:hover { border-color: var(--accent); background: var(--glow); }
+  .quiz-opt.correct { border-color: var(--accent2); background: rgba(63,185,80,.15); color: var(--accent2); }
+  .quiz-opt.wrong   { border-color: var(--accent3); background: rgba(247,129,102,.15); color: var(--accent3); }
+  .quiz-feedback {
+    margin-top: 12px; padding: 12px 16px;
+    border-radius: 9px; font-size: .9rem; line-height: 1.6;
+  }
+  .quiz-feedback.ok  { background: rgba(63,185,80,.1);   border: 1px solid var(--accent2); color: var(--accent2); }
+  .quiz-feedback.err { background: rgba(247,129,102,.1); border: 1px solid var(--accent3); color: var(--accent3); }
+  .quiz-nav { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
+  .quiz-progress { flex: 1; text-align: right; color: var(--text2); font-size: .85rem; }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 99px; height: 6px; margin-bottom: 14px; }
+  .progress-bar-fill { height: 6px; border-radius: 99px; background: var(--accent); transition: width .4s; }
+  .score-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 20px;
+    font-weight: 700; font-size: .85rem;
+  }
+
+  /* ── AUDIO VISUALIZER ── */
+  #waveCanvas { height: 120px; }
+  #specCanvas { height: 100px; }
+
+  /* ── ADC ANIMATION ── */
+  #adcCanvas { height: 280px; }
+  #quantCanvas { height: 200px; }
+
+  /* ── TOOLTIP ── */
+  .tooltip-wrap { position: relative; display: inline-block; }
+  .tooltip-wrap .tip {
+    visibility: hidden; opacity: 0;
+    background: #1f2937; color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 12px; border-radius: 8px;
+    font-size: .8rem; white-space: nowrap;
+    position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
+    pointer-events: none; transition: opacity .2s;
+    z-index: 99; box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  }
+  .tooltip-wrap:hover .tip { visibility: visible; opacity: 1; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── COMPARISON TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); color: var(--accent); font-weight: 600; }
+  tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+  td:first-child { font-weight: 600; color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎵 Оцифровка звуковой информации</h1>
+  <p>Интерактивная учебная модель · Информатика</p>
+</header>
+
+<nav>
+  <button class="tab active" onclick="showTab('theory')">📖 Теория</button>
+  <button class="tab" onclick="showTab('adc')">🔬 АЦП-симулятор</button>
+  <button class="tab" onclick="showTab('bits')">💾 Кодирование</button>
+  <button class="tab" onclick="showTab('quality')">🎛 Качество звука</button>
+  <button class="tab" onclick="showTab('quiz')">🧠 Тест</button>
+</nav>
+
+<main>
+
+<!-- ══════════════ ТЕОРИЯ ══════════════ -->
+<div id="theory" class="section active">
+  <div class="card theory">
+    <h2><span class="icon">📡</span> Что такое оцифровка звука?</h2>
+    <p>Звук — это <strong>непрерывные (аналоговые) колебания</strong> давления воздуха. Компьютер может хранить и обрабатывать только <strong>дискретные (цифровые)</strong> данные — числа. Процесс перевода называется <strong>аналого-цифровым преобразованием (АЦП)</strong>.</p>
+    <div class="highlight">
+      💡 <strong>Аналоговый сигнал</strong> — непрерывная волна, изменяющаяся в любой момент времени.<br>
+      💡 <strong>Цифровой сигнал</strong> — последовательность чисел, описывающих амплитуду в отдельные моменты.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🔄</span> Этапы оцифровки</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">🎙</div>
+        <div class="step-name">Захват</div>
+        <div class="step-desc">Микрофон преобразует звук в электрический сигнал</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">✂️</div>
+        <div class="step-name">Дискретизация</div>
+        <div class="step-desc">Измерение амплитуды через равные промежутки времени</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">📏</div>
+        <div class="step-name">Квантование</div>
+        <div class="step-desc">Округление амплитуды до ближайшего уровня</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">0️⃣1️⃣</div>
+        <div class="step-name">Кодирование</div>
+        <div class="step-desc">Запись уровней в виде двоичных чисел</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">💾</div>
+        <div class="step-name">Хранение</div>
+        <div class="step-desc">Сохранение битового потока в файл</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card theory">
+      <h2><span class="icon">⏱</span> Частота дискретизации</h2>
+      <p><strong>Частота дискретизации (Sample Rate)</strong> — количество измерений амплитуды в секунду. Измеряется в <strong>Гц</strong> или <strong>кГц</strong>.</p>
+      <div class="formula">f<sub>д</sub> ≥ 2 · f<sub>max</sub> (теорема Котельникова–Найквиста)</div>
+      <p>Человек слышит от 20 Гц до 20 000 Гц, поэтому стандарт CD — <strong>44 100 Гц</strong> (44,1 кГц).</p>
+      <div style="margin-top:12px;">
+        <span class="pill pill-blue">8 кГц — телефон</span>&nbsp;
+        <span class="pill pill-green">44,1 кГц — CD</span>&nbsp;
+        <span class="pill pill-purple">96 кГц — Hi-Res</span>
+      </div>
+    </div>
+    <div class="card theory">
+      <h2><span class="icon">📊</span> Глубина квантования</h2>
+      <p><strong>Битовая глубина (Bit Depth)</strong> — количество бит на каждое измерение. Определяет число уровней квантования:</p>
+      <div class="formula">N = 2<sup>n</sup></div>
+      <p>При <strong>8 бит</strong> → 256 уровней. При <strong>16 бит</strong> → 65 536 уровней. При <strong>24 бит</strong> → 16 777 216 уровней.</p>
+      <div style="margin-top:12px;">
+        <span class="pill pill-red">8 бит — ретро</span>&nbsp;
+        <span class="pill pill-green">16 бит — CD</span>&nbsp;
+        <span class="pill pill-purple">24 бит — студия</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card theory">
+    <h2><span class="icon">🧮</span> Формула объёма файла</h2>
+    <div class="formula">V = f<sub>д</sub> × n × k × t</div>
+    <p style="text-align:center; color:var(--text2); font-size:.85rem; margin-top:6px;">
+      f<sub>д</sub> — частота дискретизации (Гц) &nbsp;|&nbsp; n — глубина квантования (бит) &nbsp;|&nbsp; k — каналов &nbsp;|&nbsp; t — длительность (сек)
+    </p>
+    <div class="highlight" style="margin-top:14px;">
+      <strong>Пример:</strong> CD-качество, стерео, 3 минуты:<br>
+      V = 44 100 × 16 × 2 × 180 = 254 016 000 бит = <strong>≈ 30,24 МБ</strong> (без сжатия)
+    </div>
+    <canvas id="specCanvas" style="margin-top:14px; height:60px;" width="900" height="60"></canvas>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">📋</span> Сравнение форматов</h2>
+    <table>
+      <tr><th>Формат</th><th>Частота дискр.</th><th>Глубина</th><th>Каналы</th><th>Сжатие</th><th>Применение</th></tr>
+      <tr><td>WAV / AIFF</td><td>44 100–192 000 Гц</td><td>16–32 бит</td><td>1–8</td><td><span class="pill pill-red">Нет</span></td><td>Студийная запись</td></tr>
+      <tr><td>MP3</td><td>44 100 Гц</td><td>—</td><td>1–2</td><td><span class="pill pill-green">С потерями</span></td><td>Музыка, интернет</td></tr>
+      <tr><td>FLAC</td><td>до 192 000 Гц</td><td>до 32 бит</td><td>до 8</td><td><span class="pill pill-blue">Без потерь</span></td><td>Архивное хранение</td></tr>
+      <tr><td>OGG Vorbis</td><td>до 192 000 Гц</td><td>—</td><td>1–255</td><td><span class="pill pill-green">С потерями</span></td><td>Игры, стриминг</td></tr>
+      <tr><td>AAC</td><td>до 96 000 Гц</td><td>—</td><td>до 48</td><td><span class="pill pill-green">С потерями</span></td><td>Apple, YouTube</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════ АЦП СИМУЛЯТОР ══════════════ -->
+<div id="adc" class="section">
+  <div class="card">
+    <h2><span class="icon">🔬</span> Симулятор аналого-цифрового преобразователя</h2>
+    <p style="color:var(--text2); font-size:.88rem; margin-bottom:14px;">Настраивайте параметры и наблюдайте, как аналоговый сигнал превращается в цифровой. Красные точки — моменты выборки, синяя ступенчатая линия — восстановленный сигнал.</p>
+
+    <canvas id="adcCanvas" width="1000" height="280"></canvas>
+
+    <div class="legend" style="margin-top:10px;">
+      <div class="legend-item"><div class="legend-dot" style="background:#58a6ff;"></div> Аналоговый сигнал</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f78166;"></div> Точки выборки</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3fb950;"></div> Уровни квантования</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#d2a8ff;"></div> Цифровой (восстановленный)</div>
+    </div>
+
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <label>Частота дискретизации: <span id="srVal">20</span> выборок/сек (отображение)</label>
+        <input type="range" id="srSlider" min="4" max="60" value="20" oninput="updateADC()">
+      </div>
+      <div class="ctrl-group">
+        <label>Глубина квантования: <span id="bdVal">4</span> бит (<span id="levVal">16</span> уровней)</label>
+        <input type="range" id="bdSlider" min="1" max="8" value="4" oninput="updateADC()">
+      </div>
+      <div class="ctrl-group">
+        <label>Форма волны</label>
+        <select id="waveType" onchange="updateADC()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:.88rem;">
+          <option value="sine">Синусоида</option>
+          <option value="complex">Сложный сигнал</option>
+          <option value="square">Прямоугольная</option>
+          <option value="sawtooth">Пилообразная</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="stats" style="margin-top:16px;">
+      <div class="stat">
+        <div class="val" id="s-samples" style="color:var(--accent)">20</div>
+        <div class="lbl">Выборок/с</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="s-levels" style="color:var(--accent2)">16</div>
+        <div class="lbl">Уровней</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="s-snr" style="color:var(--accent4)">24.1</div>
+        <div class="lbl">SNR (дБ)</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="s-error" style="color:var(--accent3)">—</div>
+        <div class="lbl">Ошибка кванто­вания</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card theory">
+    <h2><span class="icon">📐</span> Ошибка квантования</h2>
+    <p>При квантовании возникает <strong>шум квантования</strong> — разница между реальной амплитудой и ближайшим уровнем. Максимальная ошибка равна половине шага квантования:</p>
+    <div class="formula">ε<sub>max</sub> = 1 / (2 · 2<sup>n</sup>) = 2<sup>−(n+1)</sup></div>
+    <p>Отношение сигнал/шум (SNR) для равномерного квантования:</p>
+    <div class="formula">SNR ≈ 6,02 · n + 1,76 дБ</div>
+  </div>
+</div>
+
+<!-- ══════════════ КОДИРОВАНИЕ ══════════════ -->
+<div id="bits" class="section">
+  <div class="card">
+    <h2><span class="icon">💾</span> Двоичное кодирование выборок</h2>
+    <p style="color:var(--text2); font-size:.88rem; margin-bottom:14px;">Каждая выборка кодируется n-битным числом. Ниже вы видите, как амплитуда сигнала превращается в биты.</p>
+
+    <canvas id="quantCanvas" width="900" height="200"></canvas>
+
+    <div class="ctrl-row" style="margin-top:14px;">
+      <div class="ctrl-group">
+        <label>Глубина квантования: <span id="bd2Val">4</span> бит</label>
+        <input type="range" id="bd2Slider" min="2" max="8" value="4" oninput="updateBits()">
+      </div>
+      <div class="ctrl-group">
+        <label>Количество выборок: <span id="nsVal">16</span></label>
+        <input type="range" id="nsSlider" min="8" max="32" value="16" oninput="updateBits()">
+      </div>
+      <button class="btn btn-primary" onclick="randomizeSamples()">🎲 Случайный сигнал</button>
+    </div>
+
+    <h3 style="margin-top:18px; margin-bottom:10px; font-size:.95rem; color:var(--text2);">Двоичные коды выборок:</h3>
+    <div id="bitsContainer"></div>
+
+    <div class="stats" style="margin-top:14px;">
+      <div class="stat">
+        <div class="val" id="b-total" style="color:var(--accent)">64</div>
+        <div class="lbl">Всего бит</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="b-bytes" style="color:var(--accent2)">8</div>
+        <div class="lbl">Байт</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="b-levels" style="color:var(--accent4)">16</div>
+        <div class="lbl">Уровней</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🧮</span> Калькулятор объёма файла</h2>
+    <div class="grid-2">
+      <div>
+        <div class="ctrl-group" style="margin-bottom:12px;">
+          <label>Частота дискретизации</label>
+          <select id="calcSR" onchange="calcSize()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:.88rem;">
+            <option value="8000">8 000 Гц (телефон)</option>
+            <option value="22050">22 050 Гц (FM-радио)</option>
+            <option value="44100" selected>44 100 Гц (CD)</option>
+            <option value="48000">48 000 Гц (профессионал)</option>
+            <option value="96000">96 000 Гц (Hi-Res)</option>
+            <option value="192000">192 000 Гц (студия)</option>
+          </select>
+        </div>
+        <div class="ctrl-group" style="margin-bottom:12px;">
+          <label>Глубина квантования</label>
+          <select id="calcBD" onchange="calcSize()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:.88rem;">
+            <option value="8">8 бит</option>
+            <option value="16" selected>16 бит</option>
+            <option value="24">24 бит</option>
+            <option value="32">32 бит</option>
+          </select>
+        </div>
+        <div class="ctrl-group" style="margin-bottom:12px;">
+          <label>Каналы</label>
+          <select id="calcCH" onchange="calcSize()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:.88rem;">
+            <option value="1">1 (моно)</option>
+            <option value="2" selected>2 (стерео)</option>
+            <option value="6">6 (5.1 surround)</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>Длительность: <span id="durVal">180</span> сек (<span id="durMin">3:00</span>)</label>
+          <input type="range" id="durSlider" min="1" max="600" value="180" oninput="calcSize()">
+        </div>
+      </div>
+      <div>
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:20px; height:100%;">
+          <div style="font-size:.82rem; color:var(--text2); margin-bottom:8px;">Формула расчёта:</div>
+          <div class="formula" style="font-size:.85rem; margin:0 0 16px;">V = f<sub>д</sub> × n × k × t</div>
+          <div id="calcFormula" style="font-size:.82rem; color:var(--text2); margin-bottom:16px;"></div>
+          <div style="border-top:1px solid var(--border); padding-top:14px;">
+            <div style="color:var(--text2); font-size:.78rem; margin-bottom:4px;">Объём файла:</div>
+            <div id="calcResult" style="font-size:2rem; font-weight:800; color:var(--accent);"></div>
+            <div id="calcResultMB" style="font-size:.88rem; color:var(--text2); margin-top:2px;"></div>
+            <div style="color:var(--text2); font-size:.78rem; margin-top:10px;">Битрейт:</div>
+            <div id="calcBitrate" style="font-size:1.1rem; font-weight:700; color:var(--accent2);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ КАЧЕСТВО ══════════════ -->
+<div id="quality" class="section">
+  <div class="card">
+    <h2><span class="icon">🎛</span> Влияние параметров на качество звука</h2>
+    <p style="color:var(--text2); font-size:.88rem; margin-bottom:16px;">Сравните, как частота дискретизации и глубина квантования влияют на восстановленный сигнал. Ниже — визуализация шума квантования.</p>
+    <canvas id="waveCanvas" width="900" height="120"></canvas>
+    <div class="legend" style="margin-top:8px;">
+      <div class="legend-item"><div class="legend-dot" style="background:#58a6ff;"></div> Исходный сигнал</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#d2a8ff;"></div> Восстановленный</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f78166; opacity:.7;"></div> Шум квантования</div>
+    </div>
+
+    <div class="ctrl-row" style="margin-top:16px;">
+      <div class="ctrl-group">
+        <label>Частота дискретизации: <span id="qSRVal">40</span> выборок</label>
+        <input type="range" id="qSRSlider" min="4" max="100" value="40" oninput="updateQuality()">
+      </div>
+      <div class="ctrl-group">
+        <label>Глубина квантования: <span id="qBDVal">4</span> бит</label>
+        <input type="range" id="qBDSlider" min="1" max="8" value="4" oninput="updateQuality()">
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card theory">
+      <h2><span class="icon">🔊</span> Теорема Найквиста–Котельникова</h2>
+      <p>Для точного восстановления сигнала частота дискретизации должна быть <strong>как минимум вдвое выше</strong> максимальной частоты в сигнале.</p>
+      <div class="formula">f<sub>д</sub> ≥ 2 · f<sub>max</sub></div>
+      <p>Если это условие нарушено, возникает <strong>алиасинг (aliasing)</strong> — искажение, при котором высокие частоты «маскируются» под низкие.</p>
+      <div class="highlight">⚠️ При f<sub>д</sub> = 44 100 Гц максимальная воспроизводимая частота = <strong>22 050 Гц</strong> — выше порога слышимости человека (20 кГц).</div>
+    </div>
+    <div class="card theory">
+      <h2><span class="icon">📊</span> SNR и динамический диапазон</h2>
+      <p><strong>SNR (Signal-to-Noise Ratio)</strong> — отношение полезного сигнала к шуму квантования. Каждый дополнительный бит добавляет ≈6 дБ к SNR.</p>
+      <canvas id="snrChart" width="500" height="180"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">👁</span> Визуализация алиасинга</h2>
+    <canvas id="aliasCanvas" width="900" height="160"></canvas>
+    <div class="ctrl-row" style="margin-top:12px;">
+      <div class="ctrl-group">
+        <label>Частота сигнала: <span id="sigFreqVal">3</span> Гц (условно)</label>
+        <input type="range" id="sigFreqSlider" min="1" max="20" value="3" oninput="updateAlias()">
+      </div>
+      <div class="ctrl-group">
+        <label>Частота дискретизации: <span id="aliasSDVal">8</span> выборок/сек</label>
+        <input type="range" id="aliasSRSlider" min="4" max="30" value="8" oninput="updateAlias()">
+      </div>
+    </div>
+    <div id="aliasWarning" style="margin-top:10px; padding:10px 14px; border-radius:8px; font-size:.85rem; display:none;"></div>
+  </div>
+</div>
+
+<!-- ══════════════ ТЕСТ ══════════════ -->
+<div id="quiz" class="section">
+  <div class="card">
+    <h2><span class="icon">🧠</span> Проверь свои знания</h2>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="quizProgress" style="width:0%"></div>
+    </div>
+    <div id="quizContainer"></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ════════════════════════════════════════════
+// TAB NAVIGATION
+// ════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  setTimeout(() => {
+    if (id === 'adc')     updateADC();
+    if (id === 'bits')    updateBits();
+    if (id === 'quality') { updateQuality(); drawSNRChart(); updateAlias(); }
+    if (id === 'quiz')    initQuiz();
+    drawSpecBar();
+  }, 50);
+}
+
+// ════════════════════════════════════════════
+// WAVE GENERATORS
+// ════════════════════════════════════════════
+function getWave(type, t, freq = 1) {
+  switch(type) {
+    case 'sine':     return Math.sin(2 * Math.PI * freq * t);
+    case 'square':   return Math.sign(Math.sin(2 * Math.PI * freq * t));
+    case 'sawtooth': return 2 * ((freq * t) % 1) - 1;
+    case 'complex':  return 0.5 * Math.sin(2 * Math.PI * freq * t) +
+                            0.3 * Math.sin(2 * Math.PI * freq * 2.7 * t) +
+                            0.2 * Math.sin(2 * Math.PI * freq * 5.1 * t);
+    default:         return Math.sin(2 * Math.PI * freq * t);
+  }
+}
+
+// ════════════════════════════════════════════
+// ADC CANVAS
+// ════════════════════════════════════════════
+function updateADC() {
+  const sr = +document.getElementById('srSlider').value;
+  const bd = +document.getElementById('bdSlider').value;
+  const wt = document.getElementById('waveType').value;
+  const levels = Math.pow(2, bd);
+
+  document.getElementById('srVal').textContent = sr;
+  document.getElementById('bdVal').textContent = bd;
+  document.getElementById('levVal').textContent = levels;
+  document.getElementById('s-samples').textContent = sr;
+  document.getElementById('s-levels').textContent = levels;
+
+  const snr = (6.02 * bd + 1.76).toFixed(1);
+  document.getElementById('s-snr').textContent = snr;
+  const errPct = (1 / (2 * levels) * 100).toFixed(2);
+  document.getElementById('s-error').textContent = errPct + '%';
+
+  const canvas = document.getElementById('adcCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { t: 20, b: 30, l: 50, r: 20 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(48,54,61,0.6)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= levels; i++) {
+    const y = pad.t + (i / levels) * ph;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+  }
+  for (let i = 0; i <= 10; i++) {
+    const x = pad.l + (i / 10) * pw;
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, H - pad.b); ctx.stroke();
+  }
+
+  // Quantization levels highlight
+  ctx.strokeStyle = 'rgba(63,185,80,0.2)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= levels; i++) {
+    const y = pad.t + ph - (i / levels) * ph;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+  }
+
+  // Analog signal
+  ctx.beginPath(); ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 2.5;
+  for (let px = 0; px <= pw; px++) {
+    const t = px / pw;
+    const amp = getWave(wt, t, 2);
+    const y = pad.t + ph / 2 - (amp * ph * 0.45);
+    px === 0 ? ctx.moveTo(pad.l + px, y) : ctx.lineTo(pad.l + px, y);
+  }
+  ctx.stroke();
+
+  // Samples & quantized signal
+  const samples = [];
+  for (let i = 0; i <= sr; i++) {
+    const t = i / sr;
+    const amp = getWave(wt, t, 2);
+    const raw = (amp + 1) / 2; // 0..1
+    const qLevel = Math.round(raw * (levels - 1));
+    const qAmp = (qLevel / (levels - 1)) * 2 - 1;
+    samples.push({ t, amp, qLevel, qAmp, x: pad.l + t * pw });
+  }
+
+  // Reconstructed step signal
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(210,168,255,0.9)'; ctx.lineWidth = 2;
+  samples.forEach((s, i) => {
+    const y = pad.t + ph / 2 - (s.qAmp * ph * 0.45);
+    if (i === 0) { ctx.moveTo(s.x, y); }
+    else {
+      const prev = samples[i - 1];
+      ctx.lineTo(s.x, pad.t + ph / 2 - (prev.qAmp * ph * 0.45));
+      ctx.lineTo(s.x, y);
+    }
+    if (i === samples.length - 1) ctx.lineTo(pad.l + pw, y);
+  });
+  ctx.stroke();
+
+  // Sample points
+  samples.forEach(s => {
+    const y = pad.t + ph / 2 - (s.amp * ph * 0.45);
+    ctx.beginPath();
+    ctx.arc(s.x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#f78166'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(139,148,158,0.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H - pad.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + ph / 2); ctx.lineTo(W - pad.r, pad.t + ph / 2); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#8b949e'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('t →', W - pad.r, pad.t + ph / 2 + 16);
+  ctx.save(); ctx.translate(14, pad.t + ph / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('A', 0, 0); ctx.restore();
+}
+
+// ════════════════════════════════════════════
+// BITS / QUANT CANVAS
+// ════════════════════════════════════════════
+let sampleData = [];
+
+function randomizeSamples() {
+  const ns = +document.getElementById('nsSlider').value;
+  sampleData = Array.from({ length: ns }, () => (Math.random() * 2 - 1));
+  updateBits();
+}
+
+function updateBits() {
+  const bd = +document.getElementById('bd2Slider').value;
+  const ns = +document.getElementById('nsSlider').value;
+  document.getElementById('bd2Val').textContent = bd;
+  document.getElementById('nsVal').textContent = ns;
+
+  if (sampleData.length !== ns) {
+    sampleData = Array.from({ length: ns }, (_, i) => Math.sin(2 * Math.PI * i / ns * 2));
+  }
+
+  const levels = Math.pow(2, bd);
+  const canvas = document.getElementById('quantCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { t: 15, b: 25, l: 40, r: 15 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(48,54,61,0.5)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= levels; i++) {
+    const y = pad.t + (i / levels) * ph;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+  }
+
+  const barW = pw / ns;
+
+  sampleData.forEach((amp, i) => {
+    const raw = (amp + 1) / 2;
+    const qLevel = Math.min(levels - 1, Math.round(raw * (levels - 1)));
+    const qAmp = (qLevel / (levels - 1)) * 2 - 1;
+
+    const x = pad.l + i * barW;
+    const yAmp = pad.t + ph / 2 - (amp * ph * 0.45);
+    const yQuant = pad.t + ph / 2 - (qAmp * ph * 0.45);
+
+    // Error bar
+    ctx.strokeStyle = 'rgba(247,129,102,0.4)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x + barW / 2, yAmp); ctx.lineTo(x + barW / 2, yQuant); ctx.stroke();
+
+    // Quantized bar
+    const barH = ph / 2 - (qAmp * ph * 0.45);
+    const grad = ctx.createLinearGradient(0, pad.t + ph / 2 - barH, 0, pad.t + ph / 2);
+    grad.addColorStop(0, 'rgba(88,166,255,0.7)');
+    grad.addColorStop(1, 'rgba(88,166,255,0.1)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x + 2, Math.min(pad.t + ph / 2, yQuant), barW - 4, Math.abs(pad.t + ph / 2 - yQuant));
+
+    // Sample dot
+    ctx.beginPath(); ctx.arc(x + barW / 2, yAmp, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#f78166'; ctx.fill();
+
+    // Code label
+    ctx.fillStyle = '#8b949e'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(qLevel.toString(2).padStart(bd, '0'), x + barW / 2, H - 8);
+  });
+
+  // Axis
+  ctx.strokeStyle = 'rgba(139,148,158,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + ph / 2); ctx.lineTo(W - pad.r, pad.t + ph / 2); ctx.stroke();
+
+  // Bits display
+  const container = document.getElementById('bitsContainer');
+  container.innerHTML = '';
+  sampleData.forEach((amp, i) => {
+    const raw = (amp + 1) / 2;
+    const qLevel = Math.min(levels - 1, Math.round(raw * (levels - 1)));
+    const binStr = qLevel.toString(2).padStart(bd, '0');
+    const group = document.createElement('div');
+    group.className = 'bit-group';
+    group.title = `Выборка ${i + 1}: уровень ${qLevel}`;
+    for (const b of binStr) {
+      const cell = document.createElement('div');
+      cell.className = `bit-cell bit-${b}`;
+      cell.textContent = b;
+      group.appendChild(cell);
+    }
+    container.appendChild(group);
+  });
+
+  const totalBits = bd * ns;
+  document.getElementById('b-total').textContent = totalBits;
+  document.getElementById('b-bytes').textContent = (totalBits / 8).toFixed(1);
+  document.getElementById('b-levels').textContent = levels;
+}
+
+// ════════════════════════════════════════════
+// CALC SIZE
+// ════════════════════════════════════════════
+function calcSize() {
+  const sr = +document.getElementById('calcSR').value;
+  const bd = +document.getElementById('calcBD').value;
+  const ch = +document.getElementById('calcCH').value;
+  const t = +document.getElementById('durSlider').value;
+
+  document.getElementById('durVal').textContent = t;
+  const m = Math.floor(t / 60), s = t % 60;
+  document.getElementById('durMin').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+
+  const bits = sr * bd * ch * t;
+  const bytes = bits / 8;
+  const kb = bytes / 1024, mb = bytes / 1048576, gb = bytes / 1073741824;
+
+  let result, unit;
+  if (gb >= 1) { result = gb.toFixed(2); unit = 'ГБ'; }
+  else if (mb >= 1) { result = mb.toFixed(2); unit = 'МБ'; }
+  else if (kb >= 1) { result = kb.toFixed(1); unit = 'КБ'; }
+  else { result = bytes.toFixed(0); unit = 'Б'; }
+
+  document.getElementById('calcFormula').textContent =
+    `${sr.toLocaleString()} × ${bd} × ${ch} × ${t} = ${bits.toLocaleString()} бит`;
+  document.getElementById('calcResult').textContent = result + ' ' + unit;
+  document.getElementById('calcResultMB').textContent = mb >= 1 ? '' : `(${mb.toFixed(3)} МБ)`;
+  const bitrate = (sr * bd * ch / 1000).toFixed(1);
+  document.getElementById('calcBitrate').textContent = bitrate + ' кбит/с';
+}
+
+// ════════════════════════════════════════════
+// QUALITY CANVAS
+// ════════════════════════════════════════════
+function updateQuality() {
+  const sr = +document.getElementById('qSRSlider').value;
+  const bd = +document.getElementById('qBDSlider').value;
+  document.getElementById('qSRVal').textContent = sr;
+  document.getElementById('qBDVal').textContent = bd;
+  const levels = Math.pow(2, bd);
+
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { t: 10, b: 10, l: 10, r: 10 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Original
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(88,166,255,0.6)'; ctx.lineWidth = 1.5;
+  for (let px = 0; px <= pw; px++) {
+    const t = px / pw;
+    const amp = Math.sin(2 * Math.PI * t * 3) * 0.7 + Math.sin(2 * Math.PI * t * 7.2) * 0.3;
+    const y = pad.t + ph / 2 - (amp * ph * 0.45);
+    px === 0 ? ctx.moveTo(pad.l + px, y) : ctx.lineTo(pad.l + px, y);
+  }
+  ctx.stroke();
+
+  // Reconstructed
+  const samples = [];
+  for (let i = 0; i <= sr; i++) {
+    const t = i / sr;
+    const amp = Math.sin(2 * Math.PI * t * 3) * 0.7 + Math.sin(2 * Math.PI * t * 7.2) * 0.3;
+    const raw = (amp + 1.2) / 2.4;
+    const qLevel = Math.min(levels - 1, Math.round(raw * (levels - 1)));
+    const qAmp = (qLevel / (levels - 1)) * 2.4 - 1.2;
+    samples.push({ t, qAmp });
+  }
+
+  // Error fill
+  ctx.beginPath();
+  for (let px = 0; px <= pw; px++) {
+    const t = px / pw;
+    const orig = Math.sin(2 * Math.PI * t * 3) * 0.7 + Math.sin(2 * Math.PI * t * 7.2) * 0.3;
+    const idx = Math.min(sr - 1, Math.floor(t * sr));
+    const err = orig - samples[idx].qAmp;
+    const y = pad.t + ph / 2 - (err * ph * 0.45);
+    px === 0 ? ctx.moveTo(pad.l + px, y) : ctx.lineTo(pad.l + px, y);
+  }
+  ctx.lineTo(pad.l + pw, pad.t + ph / 2);
+  ctx.lineTo(pad.l, pad.t + ph / 2);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(247,129,102,0.15)'; ctx.fill();
+
+  // Reconstructed step
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(210,168,255,0.9)'; ctx.lineWidth = 2;
+  samples.forEach((s, i) => {
+    const x = pad.l + s.t * pw;
+    const y = pad.t + ph / 2 - (s.qAmp * ph * 0.45);
+    if (i === 0) ctx.moveTo(x, y);
+    else {
+      const prev = samples[i - 1];
+      ctx.lineTo(x, pad.t + ph / 2 - (prev.qAmp * ph * 0.45));
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.stroke();
+
+  // Axis
+  ctx.strokeStyle = 'rgba(139,148,158,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + ph / 2); ctx.lineTo(pad.l + pw, pad.t + ph / 2); ctx.stroke();
+}
+
+// ════════════════════════════════════════════
+// SNR CHART
+// ════════════════════════════════════════════
+function drawSNRChart() {
+  const canvas = document.getElementById('snrChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { t: 10, b: 30, l: 50, r: 20 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  ctx.clearRect(0, 0, W, H);
+
+  const maxBits = 24, maxSNR = 6.02 * maxBits + 1.76;
+
+  ctx.strokeStyle = 'rgba(48,54,61,0.5)'; ctx.lineWidth = 1;
+  [0, 25, 50, 75, 100, 125, 150].forEach(snr => {
+    if (snr > maxSNR) return;
+    const y = pad.t + ph - (snr / maxSNR) * ph;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+    ctx.fillText(snr + ' дБ', pad.l - 4, y + 4);
+  });
+
+  // Bars
+  for (let b = 1; b <= maxBits; b += (maxBits > 12 ? 2 : 1)) {
+    const snr = 6.02 * b + 1.76;
+    const x = pad.l + ((b - 1) / (maxBits - 1)) * pw;
+    const barH = (snr / maxSNR) * ph;
+    const grad = ctx.createLinearGradient(0, pad.t + ph - barH, 0, pad.t + ph);
+    grad.addColorStop(0, '#58a6ff'); grad.addColorStop(1, 'rgba(88,166,255,0.2)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x - 6, pad.t + ph - barH, 12, barH);
+    ctx.fillStyle = '#8b949e'; ctx.font = '9px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(b, x, H - 8);
+  }
+
+  ctx.fillStyle = '#8b949e'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('Глубина квантования (бит)', pad.l + pw / 2, H - 0);
+}
+
+// ════════════════════════════════════════════
+// ALIAS
+// ════════════════════════════════════════════
+function updateAlias() {
+  const freq = +document.getElementById('sigFreqSlider').value;
+  const sr = +document.getElementById('aliasSRSlider').value;
+  document.getElementById('sigFreqVal').textContent = freq;
+  document.getElementById('aliasSDVal').textContent = sr;
+
+  const canvas = document.getElementById('aliasCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { t: 15, b: 15, l: 15, r: 15 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  ctx.clearRect(0, 0, W, H);
+
+  // Original
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(88,166,255,0.7)'; ctx.lineWidth = 2;
+  for (let px = 0; px <= pw; px++) {
+    const t = px / pw;
+    const y = pad.t + ph / 2 - (Math.sin(2 * Math.PI * freq * t) * ph * 0.42);
+    px === 0 ? ctx.moveTo(pad.l + px, y) : ctx.lineTo(pad.l + px, y);
+  }
+  ctx.stroke();
+
+  // Samples
+  const samples = [];
+  for (let i = 0; i <= sr; i++) {
+    const t = i / sr;
+    samples.push({ t, amp: Math.sin(2 * Math.PI * freq * t), x: pad.l + t * pw });
+  }
+
+  // Alias frequency
+  const aliasFreq = freq % sr;
+  const effectiveFreq = aliasFreq > sr / 2 ? sr - aliasFreq : aliasFreq;
+
+  if (freq > sr / 2) {
+    ctx.beginPath(); ctx.strokeStyle = 'rgba(247,129,102,0.8)'; ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    for (let px = 0; px <= pw; px++) {
+      const t = px / pw;
+      const y = pad.t + ph / 2 - (Math.sin(2 * Math.PI * effectiveFreq * t) * ph * 0.42);
+      px === 0 ? ctx.moveTo(pad.l + px, y) : ctx.lineTo(pad.l + px, y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Sample points
+  samples.forEach(s => {
+    ctx.beginPath(); ctx.arc(s.x, pad.t + ph / 2 - (s.amp * ph * 0.42), 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#f78166'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+
+  // Interpolated from samples
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(210,168,255,0.8)'; ctx.lineWidth = 1.5;
+  samples.forEach((s, i) => {
+    if (i === 0) ctx.moveTo(s.x, pad.t + ph / 2 - (s.amp * ph * 0.42));
+    else {
+      const prev = samples[i - 1];
+      ctx.lineTo(s.x, pad.t + ph / 2 - (prev.amp * ph * 0.42));
+      ctx.lineTo(s.x, pad.t + ph / 2 - (s.amp * ph * 0.42));
+    }
+  });
+  ctx.stroke();
+
+  // Axis
+  ctx.strokeStyle = 'rgba(139,148,158,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + ph / 2); ctx.lineTo(pad.l + pw, pad.t + ph / 2); ctx.stroke();
+
+  // Warning
+  const warn = document.getElementById('aliasWarning');
+  if (freq > sr / 2) {
+    warn.style.display = 'block';
+    warn.style.background = 'rgba(247,129,102,0.1)';
+    warn.style.border = '1px solid #f78166';
+    warn.style.color = '#f78166';
+    warn.innerHTML = `⚠️ <strong>Алиасинг!</strong> Частота сигнала (${freq} Гц) превышает половину частоты дискретизации (${sr/2} Гц). Воспринимаемая частота: <strong>${effectiveFreq} Гц</strong> вместо ${freq} Гц.`;
+  } else {
+    warn.style.display = 'block';
+    warn.style.background = 'rgba(63,185,80,0.1)';
+    warn.style.border = '1px solid #3fb950';
+    warn.style.color = '#3fb950';
+    warn.innerHTML = `✅ Условие Найквиста выполнено: частота сигнала (${freq} Гц) ≤ f<sub>д</sub>/2 = ${sr/2} Гц. Сигнал восстанавливается корректно.`;
+  }
+}
+
+// ════════════════════════════════════════════
+// SPEC BAR (decoration)
+// ════════════════════════════════════════════
+function drawSpecBar() {
+  const canvas = document.getElementById('specCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const bars = 80;
+  const bw = W / bars;
+  for (let i = 0; i < bars; i++) {
+    const h = (Math.sin(i * 0.3) * 0.4 + 0.6) * H * (0.3 + Math.random() * 0.5);
+    const grad = ctx.createLinearGradient(0, H - h, 0, H);
+    grad.addColorStop(0, '#58a6ff'); grad.addColorStop(1, 'rgba(88,166,255,0.1)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(i * bw + 1, H - h, bw - 2, h);
+  }
+}
+
+// ════════════════════════════════════════════
+// QUIZ
+// ════════════════════════════════════════════
+const questions = [
+  {
+    q: "Что измеряет частота дискретизации?",
+    opts: ["Количество бит на одну выборку", "Количество измерений амплитуды в секунду", "Уровень громкости звука", "Число каналов записи"],
+    ans: 1,
+    exp: "Частота дискретизации (Sample Rate) — это количество измерений (выборок) амплитуды звукового сигнала в секунду. Измеряется в Гц или кГц."
+  },
+  {
+    q: "При глубине квантования 8 бит количество уровней равно:",
+    opts: ["8", "64", "128", "256"],
+    ans: 3,
+    exp: "N = 2ⁿ = 2⁸ = 256 уровней. Каждый дополнительный бит удваивает количество уровней квантования."
+  },
+  {
+    q: "Теорема Найквиста–Котельникова гласит:",
+    opts: [
+      "Частота дискретизации должна быть равна максимальной частоте сигнала",
+      "Частота дискретизации должна быть не менее удвоенной максимальной частоты сигнала",
+      "Глубина квантования должна превышать частоту дискретизации",
+      "Число уровней должно быть кратно частоте сигнала"
+    ],
+    ans: 1,
+    exp: "f_д ≥ 2 · f_max. Это условие гарантирует точное восстановление сигнала без алиасинга. Для слуха человека (до 20 кГц) стандарт CD использует 44 100 Гц > 2 × 20 000 Гц."
+  },
+  {
+    q: "Чему равен объём 1 минуты стерео-аудио при 44 100 Гц и 16 бит (без сжатия)?",
+    opts: ["≈ 5 МБ", "≈ 10 МБ", "≈ 25 МБ", "≈ 50 МБ"],
+    ans: 1,
+    exp: "V = 44 100 × 16 × 2 × 60 = 84 672 000 бит = 10 584 000 байт ≈ 10,09 МБ."
+  },
+  {
+    q: "Что такое алиасинг?",
+    opts: [
+      "Уменьшение громкости при оцифровке",
+      "Ошибка квантования, возникающая при малой глубине",
+      "Искажение высоких частот при недостаточной частоте дискретизации",
+      "Потеря качества при MP3-кодировании"
+    ],
+    ans: 2,
+    exp: "Алиасинг (aliasing) — эффект, когда частота сигнала превышает половину частоты дискретизации. Высокочастотные составляющие «маскируются» под низкочастотные, создавая искажения."
+  },
+  {
+    q: "SNR при 16-битном квантовании приблизительно равен:",
+    opts: ["24 дБ", "48 дБ", "98 дБ", "144 дБ"],
+    ans: 2,
+    exp: "SNR ≈ 6,02 × n + 1,76 = 6,02 × 16 + 1,76 ≈ 98,08 дБ. Это обеспечивает отличное качество звучания CD-аудио."
+  },
+  {
+    q: "Какой формат хранит аудио без потери качества?",
+    opts: ["MP3", "AAC", "OGG", "FLAC"],
+    ans: 3,
+    exp: "FLAC (Free Lossless Audio Codec) — формат без потерь. MP3, AAC и OGG используют психоакустические модели для сжатия с потерями, удаляя «незаметные» данные."
+  },
+  {
+    q: "Каков стандарт частоты дискретизации для CD-аудио?",
+    opts: ["8 000 Гц", "22 050 Гц", "44 100 Гц", "96 000 Гц"],
+    ans: 2,
+    exp: "CD Audio использует стандарт 44 100 Гц (44,1 кГц), что обеспечивает воспроизведение частот до 22 050 Гц — выше порога слышимости человека."
+  }
+];
+
+let quizState = { current: 0, score: 0, answered: false, finished: false };
+
+function initQuiz() {
+  quizState = { current: 0, score: 0, answered: false, finished: false };
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const container = document.getElementById('quizContainer');
+  const progress = document.getElementById('quizProgress');
+
+  if (quizState.finished) {
+    const pct = Math.round(quizState.score / questions.length * 100);
+    const color = pct >= 80 ? '#3fb950' : pct >= 60 ? '#ffa657' : '#f78166';
+    container.innerHTML = `
+      <div style="text-align:center; padding:30px 0;">
+        <div style="font-size:3.5rem; margin-bottom:12px;">${pct >= 80 ? '🏆' : pct >= 60 ? '👍' : '📚'}</div>
+        <div style="font-size:1.5rem; font-weight:700; color:${color}; margin-bottom:8px;">
+          ${quizState.score} / ${questions.length} правильных ответов
+        </div>
+        <div style="font-size:2.5rem; font-weight:800; color:${color}; margin-bottom:16px;">${pct}%</div>
+        <div style="color:var(--text2); margin-bottom:24px;">
+          ${pct >= 80 ? 'Отлично! Вы отлично разбираетесь в оцифровке звука.' :
+            pct >= 60 ? 'Хорошо! Повторите отдельные темы.' :
+            'Рекомендуем ещё раз изучить теоретический материал.'}
+        </div>
+        <button class="btn btn-primary" onclick="initQuiz()">🔄 Пройти снова</button>
+      </div>
+    `;
+    progress.style.width = '100%';
+    return;
+  }
+
+  const q = questions[quizState.current];
+  progress.style.width = ((quizState.current) / questions.length * 100) + '%';
+
+  container.innerHTML = `
+    <div class="quiz-q">Вопрос ${quizState.current + 1} из ${questions.length}: ${q.q}</div>
+    <div class="quiz-opts">
+      ${q.opts.map((opt, i) => `
+        <div class="quiz-opt" onclick="answerQuiz(${i})" id="opt-${i}">
+          <span style="color:var(--text2); margin-right:10px;">${String.fromCharCode(65+i)}.</span>${opt}
+        </div>
+      `).join('')}
+    </div>
+    <div id="quiz-fb"></div>
+    <div class="quiz-nav">
+      <div class="quiz-progress">Счёт: <strong style="color:var(--accent2)">${quizState.score}</strong></div>
+    </div>
+  `;
+}
+
+function answerQuiz(idx) {
+  if (quizState.answered) return;
+  quizState.answered = true;
+  const q = questions[quizState.current];
+  const correct = idx === q.ans;
+  if (correct) quizState.score++;
+
+  q.opts.forEach((_, i) => {
+    const el = document.getElementById(`opt-${i}`);
+    el.style.pointerEvents = 'none';
+    if (i === q.ans) el.classList.add('correct');
+    else if (i === idx && !correct) el.classList.add('wrong');
+  });
+
+  document.getElementById('quiz-fb').innerHTML = `
+    <div class="quiz-feedback ${correct ? 'ok' : 'err'}">
+      ${correct ? '✅ Верно!' : '❌ Неверно.'} ${q.exp}
+    </div>
+    <div class="quiz-nav" style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="nextQuestion()">
+        ${quizState.current + 1 < questions.length ? 'Следующий вопрос →' : 'Завершить тест'}
+      </button>
+      <div class="quiz-progress">Счёт: <strong style="color:var(--accent2)">${quizState.score}</strong></div>
+    </div>
+  `;
+}
+
+function nextQuestion() {
+  quizState.current++;
+  quizState.answered = false;
+  if (quizState.current >= questions.length) quizState.finished = true;
+  renderQuestion();
+  document.getElementById('quizProgress').style.width =
+    ((quizState.current) / questions.length * 100) + '%';
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+window.addEventListener('load', () => {
+  updateADC();
+  randomizeSamples();
+  calcSize();
+  drawSpecBar();
+});
+</script>
+</body>
+</html>
