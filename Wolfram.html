@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный тренажёр по Wolfram Mathematica</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: linear-gradient(145deg, #f5f7fa 0%, #e9ecf2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0, 20, 40, 0.2);
+            padding: 30px;
+            transition: all 0.3s;
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #0b2b4a;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #2c5778;
+            font-weight: 400;
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #d0dbe8;
+            padding-bottom: 15px;
+        }
+        .menu-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 20px 0;
+        }
+        .menu-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+        }
+        .menu-btn {
+            padding: 25px 45px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            background: white;
+            color: #0b2b4a;
+            border: 2px solid #b3c9df;
+            min-width: 220px;
+        }
+        .menu-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 30px rgba(0, 40, 70, 0.15);
+            border-color: #2c7ab1;
+        }
+        .menu-btn.school {
+            background: #e3f0fa;
+            border-color: #6aa6d9;
+        }
+        .menu-btn.university {
+            background: #e7e0f5;
+            border-color: #9370cb;
+        }
+        .menu-btn .icon {
+            display: block;
+            font-size: 2.8rem;
+            margin-bottom: 6px;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            color: #2c5778;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 30px;
+            transition: 0.2s;
+            margin-bottom: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .back-btn:hover {
+            background: rgba(44, 87, 120, 0.1);
+        }
+        .course-title {
+            font-size: 1.9rem;
+            font-weight: 600;
+            color: #0b2b4a;
+            margin-bottom: 5px;
+        }
+        .topic-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .topic-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 25px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+            border: 1px solid #e2e9f2;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .topic-card:hover {
+            border-color: #8bb3d4;
+            box-shadow: 0 8px 24px rgba(0, 20, 40, 0.08);
+        }
+        .topic-card .topic-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topic-card .topic-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #0b2b4a;
+        }
+        .topic-card .topic-status {
+            font-size: 1.4rem;
+            color: #6a8aa8;
+        }
+        .topic-content {
+            display: none;
+            margin-top: 18px;
+            border-top: 1px solid #e2e9f2;
+            padding-top: 18px;
+        }
+        .topic-content.open {
+            display: block;
+        }
+        .explanation {
+            background: #f4f8fe;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 18px;
+            border-left: 5px solid #2c7ab1;
+            font-size: 0.98rem;
+            line-height: 1.6;
+        }
+        .explanation code {
+            background: #dce6f0;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .task {
+            margin-bottom: 15px;
+        }
+        .task p {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .task input {
+            padding: 10px 16px;
+            border: 2px solid #cbd8e6;
+            border-radius: 30px;
+            width: 100%;
+            max-width: 500px;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            background: white;
+            transition: 0.2s;
+        }
+        .task input:focus {
+            outline: none;
+            border-color: #2c7ab1;
+            box-shadow: 0 0 0 3px rgba(44, 122, 177, 0.2);
+        }
+        .task-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .btn {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary {
+            background: #2c7ab1;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1f5f8a;
+        }
+        .btn-secondary {
+            background: #dce6f0;
+            color: #1f3a57;
+        }
+        .btn-secondary:hover {
+            background: #c5d2e2;
+        }
+        .btn-success {
+            background: #2b8c5e;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #1f6f4a;
+        }
+        .feedback {
+            margin-top: 12px;
+            padding: 10px 16px;
+            border-radius: 16px;
+            font-weight: 500;
+            display: none;
+        }
+        .feedback.correct {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #b8d4c0;
+        }
+        .feedback.wrong {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .feedback.show-answer {
+            display: block;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .feedback code {
+            background: rgba(0,0,0,0.06);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6a8aa8;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 18px; }
+            .menu-btn { padding: 18px 25px; font-size: 1.2rem; min-width: 140px; }
+            .course-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <!-- Главное меню -->
+    <div id="menuScreen" class="menu-screen">
+        <h1>🧮 Wolfram Mathematica</h1>
+        <div class="subtitle">Интерактивный тренажёр</div>
+        <div class="menu-buttons">
+            <button class="menu-btn school" onclick="loadCourse('school')">
+                <span class="icon">🏫</span> Школьный курс
+            </button>
+            <button class="menu-btn university" onclick="loadCourse('university')">
+                <span class="icon">🎓</span> Вузовский курс
+            </button>
+        </div>
+        <div style="margin-top: 25px; max-width: 600px; text-align: center; color: #2c5778; background: rgba(255,255,255,0.7); padding: 16px 24px; border-radius: 40px; font-size: 0.95rem;">
+            <p style="margin:0;">Выберите курс, чтобы изучить основные команды Wolfram Language и проверить свои знания.</p>
+        </div>
+    </div>
+
+    <!-- Панель курса (динамическая) -->
+    <div id="courseScreen" style="display: none;">
+        <button class="back-btn" onclick="goToMenu()">← Назад к выбору</button>
+        <div id="courseHeader">
+            <div class="course-title" id="courseTitle"></div>
+            <div style="color: #2c5778; margin-bottom: 15px;">Изучите объяснения и выполните задания.</div>
+        </div>
+        <div id="topicContainer" class="topic-list">
+            <!-- сюда будут загружены темы -->
+        </div>
+    </div>
+
+    <div class="footer">
+        Тренажёр создан по материалам ВКР «Wolfram и его применение в школьном и вузовском курсе математики»
+    </div>
+</div>
+
+<script>
+    // ---------- ДАННЫЕ ----------
+    const schoolTopics = [
+        {
+            name: 'Решение уравнений',
+            explanation: 'Команда <code>Solve</code> решает уравнения в символьном виде. Например, <code>Solve[x^2 - 4 == 0, x]</code> даст <code>{{x -> -2}, {x -> 2}}</code>. Для систем уравнений используется <code>Solve[{eq1, eq2}, {x, y}]</code>.',
+            task: 'Напишите команду для решения уравнения <strong>sin x = 0.5</strong> относительно x.',
+            answer: 'Solve[Sin[x] == 0.5, x]'
+        },
+        {
+            name: 'Построение графиков',
+            explanation: 'Команда <code>Plot</code> строит график функции на заданном интервале. Пример: <code>Plot[x^2, {x, -2, 2}]</code>. Для нескольких функций используйте <code>Plot[{f1, f2}, {x, a, b}]</code>.',
+            task: 'Напишите команду для построения графика функции <strong>y = |x|</strong> на интервале <strong>[-5, 5]</strong>.',
+            answer: 'Plot[Abs[x], {x, -5, 5}]'
+        },
+        {
+            name: 'Работа с параметрами',
+            explanation: 'Для решения уравнений с параметрами удобно использовать <code>Reduce</code>. Например, <code>Reduce[x^2 + a x + 1 == 0, x]</code> выдаст условия на x и a. Чтобы найти значения параметра, при которых уравнение имеет два корня, используют дискриминант.',
+            task: 'Напишите команду, которая найдёт все значения параметра <strong>a</strong>, при которых уравнение <strong>x² + a x + 1 = 0</strong> имеет два различных действительных корня. (Подсказка: дискриминант > 0)',
+            answer: 'Reduce[a^2 - 4 > 0, a]'
+        },
+        {
+            name: 'Тригонометрические преобразования',
+            explanation: 'Wolfram может упрощать тригонометрические выражения с помощью <code>TrigReduce</code>, <code>TrigExpand</code> или <code>Simplify</code>. Например, <code>TrigReduce[Sin[x]^2]</code> даст <code>(1 - Cos[2x])/2</code>.',
+            task: 'Напишите команду для упрощения выражения <strong>sin²x + cos²x</strong>.',
+            answer: 'Simplify[Sin[x]^2 + Cos[x]^2]'
+        },
+        {
+            name: 'Решение неравенств',
+            explanation: 'Для решения неравенств используется <code>Reduce</code> или <code>Solve</code> с условиями. Например, <code>Reduce[x^2 < 4, x]</code> даст <code>-2 < x < 2</code>.',
+            task: 'Напишите команду для решения неравенства <strong>|x - 1| > 2</strong>.',
+            answer: 'Reduce[Abs[x - 1] > 2, x]'
+        }
+    ];
+
+    const universityTopics = [
+        {
+            name: 'Дифференцирование',
+            explanation: 'Команда <code>D</code> вычисляет производную. Пример: <code>D[x^3, x]</code> → <code>3x²</code>. Для частных производных указываются переменные: <code>D[x^2 y, x]</code>.',
+            task: 'Напишите команду для нахождения производной функции <strong>sin(x)·cos(x)</strong> по x.',
+            answer: 'D[Sin[x]*Cos[x], x]'
+        },
+        {
+            name: 'Интегрирование',
+            explanation: 'Неопределённый интеграл вычисляется через <code>Integrate[f, x]</code>. Определённый — <code>Integrate[f, {x, a, b}]</code>. Например, <code>Integrate[x^2, x]</code> → <code>x³/3</code>.',
+            task: 'Напишите команду для вычисления определённого интеграла <strong>∫₀¹ x² dx</strong>.',
+            answer: 'Integrate[x^2, {x, 0, 1}]'
+        },
+        {
+            name: 'Пределы',
+            explanation: 'Пределы вычисляются с помощью <code>Limit</code>. Синтаксис: <code>Limit[expr, x -> x0]</code>. Для односторонних пределов: <code>Direction -> "FromLeft"</code> или <code>"FromRight"</code>.',
+            task: 'Напишите команду для вычисления предела <strong>lim (1+1/x)^x при x → ∞</strong>.',
+            answer: 'Limit[(1 + 1/x)^x, x -> Infinity]'
+        },
+        {
+            name: 'Дифференциальные уравнения',
+            explanation: 'Для аналитического решения ОДУ используется <code>DSolve</code>. Пример: <code>DSolve[y\'[x] == y[x], y[x], x]</code>. Для задачи Коши добавляют начальные условия: <code>DSolve[{y\'[x] == y[x], y[0] == 1}, y[x], x]</code>.',
+            task: 'Напишите команду для решения дифференциального уравнения <strong>y\' + y = 0</strong> (общее решение).',
+            answer: 'DSolve[y\'[x] + y[x] == 0, y[x], x]'
+        },
+        {
+            name: 'Разложение в ряд Тейлора',
+            explanation: 'Команда <code>Series</code> даёт разложение в ряд Тейлора. Синтаксис: <code>Series[f, {x, x0, n}]</code>, где n — степень. Пример: <code>Series[Sin[x], {x, 0, 5}]</code>.',
+            task: 'Напишите команду для разложения функции <strong>e^x</strong> в ряд Тейлора до 4-й степени в окрестности 0.',
+            answer: 'Series[Exp[x], {x, 0, 4}]'
+        }
+    ];
+
+    // ---------- ЛОГИКА ----------
+    let currentCourse = ''; // 'school' or 'university'
+
+    function loadCourse(course) {
+        currentCourse = course;
+        document.getElementById('menuScreen').style.display = 'none';
+        document.getElementById('courseScreen').style.display = 'block';
+        const title = (course === 'school') ? '🏫 Школьный курс' : '🎓 Вузовский курс';
+        document.getElementById('courseTitle').textContent = title;
+        const topics = (course === 'school') ? schoolTopics : universityTopics;
+        renderTopics(topics);
+    }
+
+    function goToMenu() {
+        document.getElementById('courseScreen').style.display = 'none';
+        document.getElementById('menuScreen').style.display = 'flex';
+    }
+
+    function renderTopics(topics) {
+        const container = document.getElementById('topicContainer');
+        container.innerHTML = '';
+        topics.forEach((topic, index) => {
+            const card = document.createElement('div');
+            card.className = 'topic-card';
+            card.dataset.index = index;
+            card.innerHTML = `
+                <div class="topic-header" onclick="toggleTopic(${index})">
+                    <span class="topic-name">${topic.name}</span>
+                    <span class="topic-status" id="arrow-${index}">▶</span>
+                </div>
+                <div class="topic-content" id="content-${index}">
+                    <div class="explanation">${topic.explanation}</div>
+                    <div class="task">
+                        <p>📌 Задание</p>
+                        <p>${topic.task}</p>
+                        <input type="text" id="input-${index}" placeholder="Введите команду Wolfram..." />
+                        <div class="task-actions">
+                            <button class="btn btn-primary" onclick="checkAnswer(${index})">Проверить</button>
+                            <button class="btn btn-secondary" onclick="showAnswer(${index})">Показать ответ</button>
+                        </div>
+                        <div class="feedback" id="feedback-${index}"></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function toggleTopic(index) {
+        const content = document.getElementById(`content-${index}`);
+        const arrow = document.getElementById(`arrow-${index}`);
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+            arrow.textContent = '▶';
+        } else {
+            content.classList.add('open');
+            arrow.textContent = '▼';
+        }
+    }
+
+    function getTopics() {
+        return (currentCourse === 'school') ? schoolTopics : universityTopics;
+    }
+
+    function checkAnswer(index) {
+        const topics = getTopics();
+        const topic = topics[index];
+        const input = document.getElementById(`input-${index}`);
+        const feedback = document.getElementById(`feedback-${index}`);
+        const userAnswer = input.value.trim();
+        const correctAnswer = topic.answer;
+
+        // нормализуем: убираем лишние пробелы, приводим к нижнему регистру
+        const normalize = s => s.replace(/\s+/g, ' ').trim().toLowerCase();
+        if (normalize(userAnswer) === normalize(correctAnswer)) {
+            feedback.className = 'feedback correct';
+            feedback.innerHTML = '✅ Верно! Отличная работа!';
+        } else {
+            feedback.className = 'feedback wrong';
+            feedback.innerHTML = `❌ Не совсем. Попробуйте ещё раз. <br><small>Подсказка: проверьте синтаксис и регистр.</small>`;
+        }
+        feedback.style.display = 'block';
+    }
+
+    function showAnswer(index) {
+        const topics = getTopics();
+        const topic = topics[index];
+        const feedback = document.getElementById(`feedback-${index}`);
+        feedback.className = 'feedback show-answer';
+        feedback.innerHTML = `💡 Правильный ответ: <code>${topic.answer}</code>`;
+        feedback.style.display = 'block';
+    }
+
+    // Чтобы при нажатии Enter в поле ввода срабатывала проверка
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+            const id = e.target.id;
+            if (id && id.startsWith('input-')) {
+                const index = parseInt(id.split('-')[1]);
+                if (!isNaN(index)) {
+                    checkAnswer(index);
+                }
+            }
+        }
+    });
+
+    // Если нужно автоматически открыть первую тему при загрузке курса — можно вызвать после рендера
+    // но пусть пользователь сам открывает.
+</script>
+
+</body>
+</html>
